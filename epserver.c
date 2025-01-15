@@ -41,7 +41,7 @@
 #define FULLNAME_LIMIT 512
 
 #define IO_QUEUE_DEPTH 100
-#define FILE_SIZE 4096
+#define FILE_SIZE 15360
 
 #ifndef TRUE
 #define TRUE (1)
@@ -120,7 +120,7 @@ AddFileInCache(struct server_vars *sv)
 		}
 	}
 
-	strncpy(fcache[idx].fname, sv->fname, sizeof(sv->fname));
+	snprintf(fcache[idx].fname, sizeof(sv->fname), "%s", sv->fname);
 	memcpy(fcache[idx].file, sv->buf, sv->fsize);
 	fcache[idx].size = sv->fsize;
 	fcache[idx].last_accessed = time(NULL);
@@ -268,6 +268,8 @@ GetFile(struct server_vars *sv)
 
 	sv->fsize = fread(sv->buf, 1, FILE_SIZE, file);
 	fclose(file);
+
+	printf("[%s]: size = %ld\n", __func__, sv->fsize);
 
 	AddFileInCache(sv);
 
@@ -426,8 +428,8 @@ HandleReadEvent(struct thread_context *ctx, int sockid, struct server_vars *sv)
 	/* File read */
 	scode = FindFileInCache(sv);
 	if (scode != 200) {
-		//scode = GetFile(sv);
-		scode = UringGetFile(sv);
+		scode = GetFile(sv);
+		//scode = UringGetFile(sv);
 		if (scode != 200) {
 			TRACE_APP("Error find file");
 			mtcp_write_error(ctx, sockid, sv);
